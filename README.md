@@ -12,7 +12,7 @@ Claude Code cost track is a minimally invasive tool. Instead of running Claude C
 cccost --dangerously-skip-permissions
 ```
 
-cccost spawns Claude Code and injects [this code](./src/interceptor.ts). It hooks the NodeJS `fetch()` function and intercepts all API requests to Anthropic's servers. It then writes a file ~/.claude/projects/mangled-current-working-dir/sessionid.usage.json and keeps updating it with every new request.
+cccost spawns Claude Code and injects [this code](./src/interceptor.ts). It hooks the NodeJS `fetch()` function and intercepts all API requests to Anthropic's servers. It then writes a file ~/.claude/projects/mangled-current-working-dir/sessionid.usage.json and keeps updating it with every new request. As opoosed to Claude Code's `/cost` slash command, this also accurately tracks cost and token usage when resuming sessions.
 
 The file contains total input/output/cache read/cache write statistics per model, the usage stats for the last request made with each model, and the total cost. E.g.:
 
