@@ -238,48 +238,52 @@ export function initializeInterceptor(verbose: boolean = false) {
 		// Clone response to read it without consuming
 		const clonedResponse = response.clone();
 
-		try {
-			// Try to parse response body
-			const contentType = response.headers.get("content-type") || "";
+		// Process the clone asynchronously without blocking the response
+		(async () => {
+			try {
+				// Try to parse response body
+				const contentType = response.headers.get("content-type") || "";
 
-			if (contentType.includes("application/json")) {
-				const body: any = await clonedResponse.json();
+				if (contentType.includes("application/json")) {
+					const body: any = await clonedResponse.json();
 
-				// Extract token usage if present
-				if (body?.usage) {
-					const model = body.model || "unknown";
-					logUsage(sessionId, model, body.usage);
-				}
-			} else if (contentType.includes("text/event-stream")) {
-				// For streaming responses, we need to parse the SSE stream
-				const text = await clonedResponse.text();
-				const lines = text.split("\n");
-				let model = "unknown";
-				let usage: TokenUsage = {
-					input_tokens: 0,
-					output_tokens: 0,
-					cache_creation_input_tokens: 0,
-					cache_read_input_tokens: 0,
-				};
+					// Extract token usage if present
+					if (body?.usage) {
+						const model = body.model || "unknown";
+						logUsage(sessionId, model, body.usage);
+					}
+				} else if (contentType.includes("text/event-stream")) {
+					// For streaming responses, we need to parse the SSE stream
+					const text = await clonedResponse.text();
+					const lines = text.split("\n");
+					let model = "unknown";
+					let usage: TokenUsage = {
+						input_tokens: 0,
+						output_tokens: 0,
+						cache_creation_input_tokens: 0,
+						cache_read_input_tokens: 0,
+					};
 
-				for (const line of lines) {
-					if (line.startsWith("data: ")) {
-						const data = line.slice(6);
-						try {
-							const event = JSON.parse(data);
-							if (event.message?.model) model = event.message.model;
-							if (event?.usage) usage = event.usage;
-						} catch {
-							// Ignore parse errors
+					for (const line of lines) {
+						if (line.startsWith("data: ")) {
+							const data = line.slice(6);
+							try {
+								const event = JSON.parse(data);
+								if (event.message?.model) model = event.message.model;
+								if (event?.usage) usage = event.usage;
+							} catch {
+								// Ignore parse errors
+							}
 						}
 					}
+					logUsage(sessionId, model, usage);
 				}
-				logUsage(sessionId, model, usage);
+			} catch {
+				// Ignore any errors in parsing
 			}
-		} catch {
-			// Ignore any errors in parsing
-		}
+		})();
 
+		// Return response immediately without waiting for processing
 		return response;
 	};
 
