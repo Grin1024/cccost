@@ -253,9 +253,12 @@ export function initializeInterceptor(verbose: boolean = false) {
 						logUsage(sessionId, model, body.usage);
 					}
 				} else if (contentType.includes("text/event-stream")) {
-					// For streaming responses, we need to parse the SSE stream
-					const text = await clonedResponse.text();
-					const lines = text.split("\n");
+					// For streaming responses, process incrementally
+					const reader = clonedResponse.body?.getReader();
+					if (!reader) return;
+
+					const decoder = new TextDecoder();
+					let buffer = "";
 					let model = "unknown";
 					let usage: TokenUsage = {
 						input_tokens: 0,
@@ -264,18 +267,42 @@ export function initializeInterceptor(verbose: boolean = false) {
 						cache_read_input_tokens: 0,
 					};
 
-					for (const line of lines) {
-						if (line.startsWith("data: ")) {
-							const data = line.slice(6);
-							try {
-								const event = JSON.parse(data);
-								if (event.message?.model) model = event.message.model;
-								if (event?.usage) usage = event.usage;
-							} catch {
-								// Ignore parse errors
+					while (true) {
+						const { done, value } = await reader.read();
+						if (done) break;
+
+						buffer += decoder.decode(value, { stream: true });
+						const lines = buffer.split("\n");
+
+						// Keep the last incomplete line in the buffer
+						buffer = lines.pop() || "";
+
+						for (const line of lines) {
+							if (line.startsWith("data: ")) {
+								const data = line.slice(6);
+								try {
+									const event = JSON.parse(data);
+									if (event.message?.model) model = event.message.model;
+									if (event?.usage) usage = event.usage;
+								} catch {
+									// Ignore parse errors
+								}
 							}
 						}
 					}
+
+					// Process any remaining buffer
+					if (buffer && buffer.startsWith("data: ")) {
+						const data = buffer.slice(6);
+						try {
+							const event = JSON.parse(data);
+							if (event.message?.model) model = event.message.model;
+							if (event?.usage) usage = event.usage;
+						} catch {
+							// Ignore parse errors
+						}
+					}
+
 					logUsage(sessionId, model, usage);
 				}
 			} catch {
