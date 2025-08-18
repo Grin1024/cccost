@@ -51,7 +51,7 @@ function getClaudePath(): string {
 			.trim();
 
 		const aliasMatch = claudePath.match(/:\s*aliased to\s+(.+)$/);
-		if (aliasMatch && aliasMatch[1]) {
+		if (aliasMatch?.[1]) {
 			claudePath = aliasMatch[1];
 		}
 
@@ -59,7 +59,7 @@ function getClaudePath(): string {
 			const content = fs.readFileSync(claudePath, "utf-8");
 			if (content.startsWith("#!/bin/bash")) {
 				const execMatch = content.match(/exec\s+"([^"]+)"/);
-				if (execMatch && execMatch[1]) {
+				if (execMatch?.[1]) {
 					const actualPath = execMatch[1];
 					return resolveToJsFile(actualPath);
 				}
@@ -75,7 +75,7 @@ function getClaudePath(): string {
 			const content = fs.readFileSync(localClaudeWrapper, "utf-8");
 			if (content.startsWith("#!/bin/bash")) {
 				const execMatch = content.match(/exec\s+"([^"]+)"/);
-				if (execMatch && execMatch[1]) {
+				if (execMatch?.[1]) {
 					return resolveToJsFile(execMatch[1]);
 				}
 			}
