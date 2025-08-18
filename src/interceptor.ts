@@ -285,8 +285,6 @@ export function initializeInterceptor(verbose: boolean = false) {
 
 	// Set up cleanup handler
 	const cleanup = () => {
-		if (!verboseLogging) return;
-
 		const duration = Math.floor((Date.now() - startTime) / 1000);
 		const minutes = Math.floor(duration / 60);
 		const seconds = duration % 60;
