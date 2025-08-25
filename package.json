@@ -6,8 +6,8 @@
 		"cccost": "dist/cli.js"
 	},
 	"scripts": {
-		"clean": "rm -rf dist",
-		"build": "tsc && cp src/interceptor-loader.js dist/ && chmod +x dist/cli.js",
+		"clean": "rimraf dist",
+		"build": "tsc && copy src\\interceptor-loader.js dist\\ && copy src\\cli.js dist\\cli.js",
 		"check": "biome check --write . && tsc --noEmit",
 		"prepublishOnly": "npm run clean && npm run build",
 		"prepare": "husky"
@@ -38,6 +38,7 @@
 		"@biomejs/biome": "^2.2.0",
 		"@types/node": "^22.10.5",
 		"husky": "^9.1.7",
+		"rimraf": "^6.0.1",
 		"tsx": "^4.20.4",
 		"typescript": "^5.9.2"
 	}
